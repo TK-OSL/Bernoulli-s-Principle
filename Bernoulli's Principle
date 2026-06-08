@@ -1,0 +1,1330 @@
+<!-- 
+=============================================================================
+Project Name: Bernoulli's Principle Interactive Web Application
+Description: เว็บแอปพลิเคชันอินเทอร์แอกทีฟสอน "หลักการของแบร์นูลลี"
+Version: 20.1 (Ex1 dP Math Text Fixed)
+=============================================================================
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bernoulli's Principle</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- MathJax Configuration สำหรับประมวลผลสมการคณิตศาสตร์ -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            startup: {
+                typeset: false 
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        body {
+            font-family: 'Sarabun', sans-serif;
+            background-color: #f8fafc; 
+            color: #334155;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Language Switcher */
+        .lang-toggle-box {
+            display: inline-flex;
+            background-color: #e2e8f0;
+            border-radius: 10px;
+            padding: 4px;
+            position: relative;
+            cursor: pointer;
+            width: 104px;
+            height: 38px;
+            align-items: center;
+            border: 1px solid #cbd5e1;
+            user-select: none;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .lang-slider {
+            position: absolute;
+            width: 46px;
+            height: 28px;
+            background: white;
+            border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+            left: 4px;
+        }
+        .lang-en-active .lang-slider { transform: translateX(0); }
+        .lang-th-active .lang-slider { transform: translateX(48px); }
+        
+        .lang-text {
+            position: relative;
+            z-index: 1;
+            flex: 1;
+            text-align: center;
+            font-weight: 700;
+            font-size: 14px;
+            transition: color 0.3s ease;
+        }
+        .lang-text.en { color: #64748b; }
+        .lang-text.th { color: #64748b; }
+        .lang-en-active .lang-text.en { color: #1e293b; }
+        .lang-th-active .lang-text.th { color: #ea580c; }
+
+        body.lang-en .th-text { display: none !important; }
+        body.lang-th .en-text { display: none !important; }
+
+        /* Canvas */
+        #sim-container {
+            width: 100%;
+            height: 450px; 
+            background: linear-gradient(to bottom, #ffffff, #f1f5f9);
+            border-radius: 1rem;
+            box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.05);
+            position: relative;
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Sliders */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]:focus { outline: none; }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 22px;
+            width: 22px;
+            border-radius: 50%;
+            background: #2563eb;
+            cursor: pointer;
+            margin-top: -8px;
+            box-shadow: 0 2px 4px rgba(37, 99, 235, 0.4);
+            border: 2px solid #ffffff;
+            transition: transform 0.1s;
+        }
+        input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 6px;
+            cursor: pointer;
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+
+        /* Inputs for Examples */
+        .inline-input {
+            width: 65px;
+            padding: 2px 4px;
+            text-align: center;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            font-weight: 700;
+            color: #2563eb;
+            background-color: #f8fafc;
+            margin: 0 4px;
+            transition: all 0.2s;
+            -moz-appearance: textfield;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
+        }
+        .inline-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+            background-color: #ffffff;
+        }
+        .inline-input::-webkit-outer-spin-button,
+        .inline-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        /* Math Display Wrapper - จัดกึ่งกลางสมการเพื่อความสวยงาม */
+        .math-wrapper {
+            overflow-x: auto;
+            overflow-y: hidden;
+            padding: 0.5rem 0;
+            line-height: 1.8;
+            text-align: center !important;
+        }
+        mjx-container[jax="CHTML"][display="true"] {
+            margin: 1em auto !important;
+            text-align: center !important;
+        }
+    </style>
+</head>
+<body class="lang-en antialiased selection:bg-blue-200 selection:text-blue-900">
+
+    <main class="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-10">
+        
+        <!-- Main Header & Language Toggle -->
+        <div class="flex flex-col md:flex-row justify-between items-center gap-4 border-b border-slate-200 pb-6">
+            <div class="text-center md:text-left">
+                <h1 class="text-4xl font-extrabold text-blue-700 tracking-tight mb-2">
+                    <span class="en-text">Bernoulli's Principle</span>
+                    <span class="th-text">หลักการของแบร์นูลลี</span>
+                </h1>
+                <p class="text-lg text-slate-500">
+                    <span class="en-text">Fluid Dynamics Interactive Lesson</span>
+                    <span class="th-text">บทเรียนอินเทอร์แอกทีฟ: พลศาสตร์ของไหล</span>
+                </p>
+            </div>
+            <div class="lang-toggle-box lang-en-active shrink-0" id="langToggleBtn" onclick="switchLanguage()">
+                <div class="lang-slider"></div>
+                <div class="lang-text en">EN</div>
+                <div class="lang-text th">TH</div>
+            </div>
+        </div>
+
+        <!-- Section 1: History & Discovery -->
+        <div class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200">
+            <h2 class="text-2xl font-bold mb-4 text-slate-800 flex items-center gap-3">
+                <span class="text-indigo-500 bg-indigo-50 px-3 py-1 rounded-lg">✦</span>
+                <span class="en-text">History & Discovery</span>
+                <span class="th-text">ประวัติการค้นพบ</span>
+            </h2>
+            <div class="text-slate-600 text-base space-y-4 leading-relaxed">
+                <p class="en-text">
+                    The principle is named after <strong>Daniel Bernoulli</strong>, a Swiss mathematician and physicist. He published his principle in his book <em>Hydrodynamica</em> in <strong>1738</strong>.
+                </p>
+                <p class="th-text">
+                    หลักการนี้ตั้งชื่อตาม <strong>แดเนียล แบร์นูลลี (Daniel Bernoulli)</strong> นักคณิตศาสตร์และนักฟิสิกส์ชาวสวิส เขาได้ตีพิมพ์หลักการนี้ในหนังสือของเขาที่ชื่อว่า <em>Hydrodynamica</em> ในปี ค.ศ. <strong>1738</strong>
+                </p>
+                <p class="en-text">
+                    While Bernoulli deduced that pressure decreases when flow speed increases, it was actually <strong>Leonhard Euler</strong> who derived Bernoulli's equation in its usual mathematical form in 1752.
+                </p>
+                <p class="th-text">
+                    แม้แบร์นูลลีจะค้นพบความสัมพันธ์ แต่ <strong>เลออนฮาร์ด ออยเลอร์ (Leonhard Euler)</strong> คือผู้ที่อนุมานสมการแบร์นูลลีให้อยู่ในรูปแบบคณิตศาสตร์ที่เราใช้กันในปัจจุบันเมื่อปี 1752
+                </p>
+            </div>
+        </div>
+
+        <!-- Section 2: Concept & Proof -->
+        <div class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200">
+            <h2 class="text-2xl font-bold mb-4 text-slate-800 flex items-center gap-3">
+                <span class="text-blue-500 bg-blue-50 px-3 py-1 rounded-lg">❖</span>
+                <span class="en-text">The Concept & Proof</span>
+                <span class="th-text">แนวคิดและการพิสูจน์สมการ</span>
+            </h2>
+            <div class="text-slate-600 space-y-4 text-base leading-relaxed">
+                <p class="en-text">
+                    Bernoulli's principle states that an increase in the speed of a fluid occurs simultaneously with a decrease in static pressure or a decrease in the fluid's potential energy. It is derived from the principle of <strong>Conservation of Energy</strong> for flowing fluids.
+                </p>
+                <p class="th-text">
+                    หลักการของแบร์นูลลีกล่าวว่า เมื่อของไหลมีความเร็วเพิ่มขึ้น ความดันสถิตของของไหลจะลดลง หรือพลังงานศักย์จะลดลง หลักการนี้เกิดจากการประยุกต์ใช้ <strong>กฎการอนุรักษ์พลังงาน</strong> กับของไหลที่กำลังเคลื่อนที่ โดยถือว่าของไหลมีความหนาแน่นคงที่ (Incompressible fluid)
+                </p>
+
+                <div class="bg-slate-50 p-6 rounded-xl border border-slate-200 mt-6 shadow-inner">
+                    <p class="en-text font-bold text-slate-800 mb-3 border-b border-slate-200 pb-2">Proof using Work-Energy Theorem:</p>
+                    <p class="th-text font-bold text-slate-800 mb-3 border-b border-slate-200 pb-2">การพิสูจน์จากทฤษฎีบทงาน-พลังงาน:</p>
+                    
+                    <p class="en-text mb-3">The net work done on the fluid equals the change in kinetic and potential energy: <span id="math-proof-0" class="text-blue-600 font-semibold notranslate" translate="no"></span></p>
+                    <p class="th-text mb-3">งานลัพธ์ที่กระทำต่อของไหลจะเท่ากับการเปลี่ยนแปลงพลังงานจลน์และพลังงานศักย์: <span id="math-proof-0-th" class="text-blue-600 font-semibold notranslate" translate="no"></span></p>
+                    
+                    <div id="math-proof-1" class="math-wrapper text-center notranslate" translate="no"></div>
+                    
+                    <p class="en-text my-4 text-center">Divide the entire equation by Volume (<span id="math-proof-2" class="notranslate" translate="no"></span>), since Density <span id="math-proof-3" class="notranslate" translate="no"></span>:</p>
+                    <p class="th-text my-4 text-center">นำปริมาตร (<span id="math-proof-2-th" class="notranslate" translate="no"></span>) หารตลอดสมการ เนื่องจากความหนาแน่น <span id="math-proof-3-th" class="notranslate" translate="no"></span> จะได้:</p>
+                    
+                    <div id="math-proof-4" class="math-wrapper text-center notranslate" translate="no"></div>
+                    
+                    <div class="bg-blue-100/50 p-6 rounded-xl mt-6 border border-blue-200 text-center shadow-sm">
+                        <p class="en-text font-semibold text-blue-800 mb-2">Rearranging gives Bernoulli's Equation:</p>
+                        <p class="th-text font-semibold text-blue-800 mb-2">จัดรูปสมการใหม่ จะได้สมการแบร์นูลลี:</p>
+                        <div id="math-proof-5" class="math-wrapper text-blue-900 font-bold text-xl font-serif notranslate" translate="no"></div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm mt-6 text-slate-700 text-sm">
+                    <ul class="list-disc pl-6 space-y-3">
+                        <li><span class="en-text"><strong><span id="math-var-p" class="notranslate" translate="no"></span></strong> = Absolute static pressure (Pa or N/m²)</span><span class="th-text"><strong><span id="math-var-p-th" class="notranslate" translate="no"></span></strong> = ความดันสถิตสัมบูรณ์ (Pa หรือ N/m²)</span></li>
+                        <li><span class="en-text"><strong><span id="math-var-rho" class="notranslate" translate="no"></span> (rho)</strong> = Fluid density (kg/m³)</span><span class="th-text"><strong><span id="math-var-rho-th" class="notranslate" translate="no"></span> (rho)</strong> = ความหนาแน่นของของไหล (kg/m³)</span></li>
+                        <li><span class="en-text"><strong><span id="math-var-v" class="notranslate" translate="no"></span></strong> = Fluid velocity (m/s)</span><span class="th-text"><strong><span id="math-var-v-th" class="notranslate" translate="no"></span></strong> = ความเร็วของการไหล (m/s)</span></li>
+                        <li><span class="en-text"><strong><span id="math-var-h" class="notranslate" translate="no"></span></strong> = Elevation above reference (m)</span><span class="th-text"><strong><span id="math-var-h-th" class="notranslate" translate="no"></span></strong> = ความสูงจากระดับอ้างอิง (m)</span></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 3: Applications Header & Added Practical Content -->
+        <div class="bg-gradient-to-r from-blue-700 to-indigo-600 rounded-2xl p-6 md:p-8 text-white shadow-lg relative overflow-hidden">
+            <div class="relative z-10">
+                <h2 class="text-2xl font-bold flex items-center gap-3">
+                    <span class="bg-white/20 p-2 rounded-lg">⚙️</span>
+                    <span class="en-text">Practical Applications</span>
+                    <span class="th-text">การนำไปประยุกต์ใช้ในชีวิตประจำวัน</span>
+                </h2>
+                <p class="text-blue-100 mt-3 text-[15px]">
+                    <span class="en-text">Bernoulli's principle explains many phenomena in our daily lives. Here are a few notable examples before we dive into the calculations:</span>
+                    <span class="th-text">หลักการของแบร์นูลลีสามารถอธิบายปรากฏการณ์รอบตัวเราได้อย่างมากมาย นี่คือตัวอย่างที่พบเห็นได้บ่อยในชีวิตประจำวัน:</span>
+                </p>
+            </div>
+        </div>
+
+        <!-- Real-world Applications Content -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md transition">
+                <div class="text-4xl mb-4 text-blue-500">🌬️</div>
+                <h3 class="font-bold text-slate-800 mb-2">
+                    <span class="en-text">Atomizers & Sprays</span>
+                    <span class="th-text">หัวฉีดและขวดสเปรย์</span>
+                </h3>
+                <p class="text-sm text-slate-600 leading-relaxed">
+                    <span class="en-text">Fast-moving air across the top of a tube lowers the pressure. The higher atmospheric pressure inside the bottle then pushes the liquid up and out as a mist.</span>
+                    <span class="th-text">อากาศที่ไหลเร็วผ่านปากหลอดจะทำให้ความดันอากาศบริเวณนั้นลดลง ความดันในขวดที่สูงกว่าจึงดันน้ำให้ไหลขึ้นมาตามท่อและพ่นออกเป็นละออง</span>
+                </p>
+            </div>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md transition">
+                <div class="text-4xl mb-4 text-slate-600">🌪️</div>
+                <h3 class="font-bold text-slate-800 mb-2">
+                    <span class="en-text">Chimney Draft</span>
+                    <span class="th-text">การระบายควันปล่องไฟ</span>
+                </h3>
+                <p class="text-sm text-slate-600 leading-relaxed">
+                    <span class="en-text">Wind blowing across the top of a chimney creates a low-pressure area, which draws the smoke and gases up and efficiently out of the house.</span>
+                    <span class="th-text">ลมที่พัดผ่านยอดปล่องไฟด้วยความเร็วจะสร้างหย่อมความดันต่ำขึ้น ทำให้ควันและก๊าซร้อนภายในบ้านถูกดูดลอยขึ้นและระบายออกไปได้ดีขึ้น</span>
+                </p>
+            </div>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md transition">
+                <div class="text-4xl mb-4 text-green-600">⚾</div>
+                <h3 class="font-bold text-slate-800 mb-2">
+                    <span class="en-text">Curveball (Magnus Effect)</span>
+                    <span class="th-text">วิถีลูกปั่นโค้ง (Magnus Effect)</span>
+                </h3>
+                <p class="text-sm text-slate-600 leading-relaxed">
+                    <span class="en-text">A spinning ball drags air around it, creating faster airflow on one side. This pressure difference causes the ball to curve mid-flight.</span>
+                    <span class="th-text">ลูกบอลที่ปั่นจะดึงกระแสอากาศให้หมุนตาม ทำให้ความเร็วลมสองข้างไม่เท่ากัน เกิดเป็นความต่างความดันที่ผลักให้ลูกบอลเปลี่ยนทิศทางกลางอากาศ</span>
+                </p>
+            </div>
+        </div>
+
+        <!-- Interactive Simulation -->
+        <div class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200">
+            <h2 class="text-2xl font-bold mb-3 text-slate-800 flex items-center gap-3">
+                <span class="text-emerald-500 bg-emerald-50 px-3 py-1 rounded-lg">▶</span>
+                <span class="en-text">Interactive Simulation</span>
+                <span class="th-text">แบบจำลองภาพเคลื่อนไหว (Interactive)</span>
+            </h2>
+            <p class="text-slate-500 text-[15px] mb-6">
+                <span class="en-text">Adjust the sliders to see how area and height affect velocity and pressure. Fluid density is fixed to water (<span id="math-sim-water" class="notranslate" translate="no"></span>).</span>
+                <span class="th-text">ลองปรับค่าต่างๆ เพื่อดูว่าพื้นที่หน้าตัดและความสูงมีผลต่อความเร็วและความต่างความดันอย่างไร กำหนดให้น้ำมีความหนาแน่น <span id="math-sim-water-th" class="notranslate" translate="no"></span></span>
+            </p>
+
+            <!-- 2D Canvas Container -->
+            <div id="sim-container" class="mb-8 border border-slate-300">
+                <canvas id="pipeCanvas"></canvas>
+            </div>
+
+            <!-- Controls Sliders -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-sm">
+                    <label class="flex justify-between text-sm font-bold text-slate-700 mb-3">
+                        <span class="en-text">Area 1 (<span id="math-lbl-a1" class="notranslate" translate="no"></span>)</span><span class="th-text">พื้นที่หน้าตัด 1 (<span id="math-lbl-a1-th" class="notranslate" translate="no"></span>)</span>
+                        <span class="text-blue-600 font-mono text-base"><span id="lblA1">3.0</span> <span class="text-xs text-slate-400">m²</span></span>
+                    </label>
+                    <input type="range" id="simA1" min="1" max="4" step="0.1" value="3" oninput="runAllCalculations()">
+                </div>
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-sm">
+                    <label class="flex justify-between text-sm font-bold text-slate-700 mb-3">
+                        <span class="en-text">Area 2 (<span id="math-lbl-a2" class="notranslate" translate="no"></span>)</span><span class="th-text">พื้นที่หน้าตัด 2 (<span id="math-lbl-a2-th" class="notranslate" translate="no"></span>)</span>
+                        <span class="text-blue-600 font-mono text-base"><span id="lblA2">1.5</span> <span class="text-xs text-slate-400">m²</span></span>
+                    </label>
+                    <input type="range" id="simA2" min="0.5" max="4" step="0.1" value="1.5" oninput="runAllCalculations()">
+                </div>
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-sm">
+                    <label class="flex justify-between text-sm font-bold text-slate-700 mb-3">
+                        <span class="en-text">Velocity 1 (<span id="math-lbl-v1" class="notranslate" translate="no"></span>)</span><span class="th-text">ความเร็ว 1 (<span id="math-lbl-v1-th" class="notranslate" translate="no"></span>)</span>
+                        <span class="text-blue-600 font-mono text-base"><span id="lblV1">2.0</span> <span class="text-xs text-slate-400">m/s</span></span>
+                    </label>
+                    <input type="range" id="simV1" min="0.1" max="5" step="0.1" value="2" oninput="runAllCalculations()">
+                </div>
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-sm">
+                    <label class="flex justify-between text-sm font-bold text-slate-700 mb-3">
+                        <span class="en-text">Abs. Pressure 2 (<span id="math-lbl-p2" class="notranslate" translate="no"></span>)</span><span class="th-text">ความดันสัมบูรณ์ 2 (<span id="math-lbl-p2-th" class="notranslate" translate="no"></span>)</span>
+                        <span class="text-blue-600 font-mono text-base"><span id="lblP2">101</span> <span class="text-xs text-slate-400">kPa</span></span>
+                    </label>
+                    <input type="range" id="simP2" min="50" max="200" step="1" value="101" oninput="runAllCalculations()">
+                </div>
+                <div class="bg-indigo-50/50 p-4 rounded-xl border border-indigo-100 shadow-sm">
+                    <label class="flex justify-between text-sm font-bold text-indigo-800 mb-3">
+                        <span class="en-text">Height 1 (<span id="math-lbl-h1" class="notranslate" translate="no"></span>)</span><span class="th-text">ความสูง 1 (<span id="math-lbl-h1-th" class="notranslate" translate="no"></span>)</span>
+                        <span class="text-indigo-600 font-mono text-base"><span id="lblH1">0.0</span> <span class="text-xs text-indigo-400">m</span></span>
+                    </label>
+                    <input type="range" id="simH1" min="0" max="10" step="0.5" value="0" oninput="runAllCalculations()">
+                </div>
+                <div class="bg-indigo-50/50 p-4 rounded-xl border border-indigo-100 shadow-sm">
+                    <label class="flex justify-between text-sm font-bold text-indigo-800 mb-3">
+                        <span class="en-text">Height 2 (<span id="math-lbl-h2" class="notranslate" translate="no"></span>)</span><span class="th-text">ความสูง 2 (<span id="math-lbl-h2-th" class="notranslate" translate="no"></span>)</span>
+                        <span class="text-indigo-600 font-mono text-base"><span id="lblH2">4.0</span> <span class="text-xs text-indigo-400">m</span></span>
+                    </label>
+                    <input type="range" id="simH2" min="0" max="10" step="0.5" value="4" oninput="runAllCalculations()">
+                </div>
+            </div>
+
+            <!-- Live Calculation Output (แสดงวิธีทำใน Interactive เรียงบน-ล่าง) -->
+            <div class="mt-8 pt-6 border-t border-slate-200">
+                <div class="flex flex-col gap-8">
+                    
+                    <!-- Continuity Eq Box -->
+                    <div class="bg-white p-6 rounded-2xl border border-blue-100 shadow-sm flex flex-col items-center">
+                        <div class="font-bold text-blue-800 mb-4 text-sm uppercase tracking-widest border-b border-blue-100 pb-3 text-center w-full">
+                            <span class="en-text">Continuity Equation</span>
+                            <span class="th-text">สมการความต่อเนื่อง (หาความเร็ว 2)</span>
+                        </div>
+                        <div id="live-calc-v2" class="text-slate-800 text-base math-wrapper notranslate w-full" translate="no"></div>
+                        
+                        <!-- Result 1 -->
+                        <div class="mt-6 pt-5 border-t border-blue-100 text-center bg-blue-50/50 rounded-xl p-4 w-full md:w-auto self-center">
+                            <div class="text-xs text-blue-500 uppercase tracking-widest font-bold mb-2">
+                                <span class="en-text">Output Velocity (<span id="math-res-v2" class="notranslate" translate="no"></span>)</span>
+                                <span class="th-text">ความเร็ว 2 (<span id="math-res-v2-th" class="notranslate" translate="no"></span>)</span>
+                            </div>
+                            <div class="text-4xl font-black text-blue-700" id="resV2">0.00 <span class="text-lg font-semibold text-blue-400">m/s</span></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Bernoulli Eq Box (หาความต่างศักย์ความดัน) -->
+                    <div id="resDPContainer" class="bg-white p-6 rounded-2xl border border-blue-100 shadow-sm flex flex-col items-center transition-colors duration-300">
+                        <div id="resDPHeader" class="font-bold text-blue-800 mb-4 text-sm uppercase tracking-widest border-b border-blue-100 pb-3 text-center w-full transition-colors">
+                            <span class="en-text">Bernoulli's Equation</span>
+                            <span class="th-text">สมการแบร์นูลลี (หาความต่างความดัน dP)</span>
+                        </div>
+                        <div id="live-calc-dp" class="text-blue-700 text-base math-wrapper notranslate w-full transition-colors" translate="no"></div>
+                        
+                        <!-- Result 2 -->
+                        <div id="resDPInnerBox" class="mt-6 pt-5 border-t border-blue-100 text-center bg-blue-50/50 rounded-xl p-4 w-full md:w-auto self-center transition-colors duration-300">
+                            <div id="resDPLabel" class="text-xs text-blue-500 uppercase tracking-widest font-bold mb-2 transition-colors">
+                                <span class="en-text">Pressure Difference (<span id="math-res-dp" class="notranslate" translate="no"></span>)</span>
+                                <span class="th-text">ความต่างความดัน (<span id="math-res-dp-th" class="notranslate" translate="no"></span>)</span>
+                            </div>
+                            <div class="text-4xl font-black text-blue-700 transition-colors" id="resDP">0.00 <span id="resDPUnit" class="text-lg font-semibold text-blue-400">kPa</span></div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 4: Customizable Examples -->
+        <div class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200">
+            <h2 class="text-2xl font-bold mb-6 text-slate-800 flex items-center gap-3">
+                <span class="text-amber-500 bg-amber-50 px-3 py-1 rounded-lg">✎</span>
+                <span class="en-text">Customizable Examples</span>
+                <span class="th-text">ตัวอย่างโจทย์ (แก้ไขตัวเลขได้)</span>
+            </h2>
+
+            <div class="flex flex-col gap-10">
+                
+                <!-- Example 1 (หา dP) -->
+                <div class="border border-blue-200 rounded-2xl p-6 md:p-8 bg-blue-50/30 flex flex-col shadow-sm">
+                    <h3 class="font-bold text-blue-900 text-xl mb-5 flex items-center gap-3">
+                        <span class="bg-blue-600 text-white px-3 py-1 rounded-md text-sm shadow-sm">Ex 1</span>
+                        <span class="en-text">Pipe with Elevation</span><span class="th-text">ท่อน้ำต่างระดับ</span>
+                    </h3>
+
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 mb-6 shadow-sm flex justify-center overflow-x-auto">
+                        <svg viewBox="0 0 450 200" class="w-full max-w-lg h-auto" style="min-width: 350px;">
+                            <path d="M 0 140 L 150 140 C 200 140, 200 60, 250 60 L 450 60 L 450 100 L 250 100 C 200 100, 200 180, 150 180 L 0 180 Z" fill="#bae6fd"/>
+                            <path d="M 0 140 L 150 140 C 200 140, 200 60, 250 60 L 450 60" stroke="#475569" stroke-width="4" fill="none"/>
+                            <path d="M 0 180 L 150 180 C 200 180, 200 100, 250 100 L 450 100" stroke="#475569" stroke-width="4" fill="none"/>
+                            
+                            <line x1="0" y1="195" x2="450" y2="195" stroke="#94a3b8" stroke-width="2" stroke-dasharray="8,4"/>
+                            <text x="400" y="190" text-anchor="middle" font-family="Sarabun, sans-serif" font-size="12" fill="#64748b" font-weight="bold" class="en-text">Datum (h=0)</text>
+                            <text x="400" y="190" text-anchor="middle" font-family="Sarabun, sans-serif" font-size="12" fill="#64748b" font-weight="bold" class="th-text">ระดับอ้างอิง (h=0)</text>
+
+                            <defs>
+                                <marker id="arrow1" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                                    <path d="M 0 0 L 10 5 L 0 10 z" fill="#2563eb" />
+                                </marker>
+                                <marker id="arrowH" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+                                    <path d="M 0 0 L 10 5 L 0 10 z" fill="#8b5cf6" />
+                                </marker>
+                            </defs>
+
+                            <line x1="60" y1="140" x2="60" y2="180" stroke="#3b82f6" stroke-width="2" stroke-dasharray="4"/>
+                            <text x="60" y="135" text-anchor="middle" font-family="Sarabun, sans-serif" font-size="14" fill="#1e293b" font-weight="bold">A₁</text>
+                            <text x="90" y="165" text-anchor="middle" font-family="Sarabun, sans-serif" font-size="14" fill="#0369a1" font-weight="bold">P₁</text>
+                            <path d="M 30 160 L 70 160" stroke="#2563eb" stroke-width="3" marker-end="url(#arrow1)"/>
+                            <text x="50" y="155" text-anchor="middle" font-family="Sarabun, sans-serif" font-size="14" fill="#2563eb" font-weight="bold">v₁</text>
+                            
+                            <line x1="120" y1="160" x2="120" y2="195" stroke="#8b5cf6" stroke-width="2" marker-start="url(#arrowH)" marker-end="url(#arrowH)"/>
+                            <text x="135" y="180" text-anchor="middle" font-family="Sarabun, sans-serif" font-size="14" fill="#8b5cf6" font-weight="bold">h₁</text>
+
+                            <line x1="350" y1="60" x2="350" y2="100" stroke="#3b82f6" stroke-width="2" stroke-dasharray="4"/>
+                            <text x="350" y="55" text-anchor="middle" font-family="Sarabun, sans-serif" font-size="14" fill="#1e293b" font-weight="bold">A₂</text>
+                            <text x="380" y="85" text-anchor="middle" font-family="Sarabun, sans-serif" font-size="14" fill="#0369a1" font-weight="bold">P₂</text>
+                            <path d="M 320 80 L 360 80" stroke="#2563eb" stroke-width="3" marker-end="url(#arrow1)"/>
+                            <text x="340" y="75" text-anchor="middle" font-family="Sarabun, sans-serif" font-size="14" fill="#2563eb" font-weight="bold">v₂</text>
+
+                            <line x1="280" y1="80" x2="280" y2="195" stroke="#8b5cf6" stroke-width="2" marker-start="url(#arrowH)" marker-end="url(#arrowH)"/>
+                            <text x="295" y="140" text-anchor="middle" font-family="Sarabun, sans-serif" font-size="14" fill="#8b5cf6" font-weight="bold">h₂</text>
+                        </svg>
+                    </div>
+                    
+                    <div class="text-[15px] text-slate-700 mb-6 leading-loose bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                        <span class="en-text">Water flows through a pipe. Given Area 1 = </span>
+                        <span class="th-text">น้ำไหลผ่านท่อน้ำ กำหนดให้พื้นที่หน้าตัด 1 = </span>
+                        <input type="number" id="inEx1A1" value="0.5" step="0.1" class="inline-input" oninput="runAllCalculations()">
+                        
+                        <span class="en-text"> m², Area 2 = </span>
+                        <span class="th-text"> m², พื้นที่หน้าตัด 2 = </span>
+                        <input type="number" id="inEx1A2" value="0.2" step="0.1" class="inline-input" oninput="runAllCalculations()">
+                        
+                        <span class="en-text"> m², Velocity 1 = </span>
+                        <span class="th-text"> m², ความเร็ว 1 = </span>
+                        <input type="number" id="inEx1V1" value="2" step="0.5" class="inline-input" oninput="runAllCalculations()">
+                        
+                        <span class="en-text"> m/s, Height 1 = </span>
+                        <span class="th-text"> m/s, ความสูง 1 = </span>
+                        <input type="number" id="inEx1H1" value="2" step="1" class="inline-input" oninput="runAllCalculations()">
+
+                        <span class="en-text"> m, Height 2 = </span>
+                        <span class="th-text"> m, ความสูง 2 = </span>
+                        <input type="number" id="inEx1H2" value="5" step="1" class="inline-input" oninput="runAllCalculations()">
+                        
+                        <span class="en-text"> m. Find the velocity at section 2 and the pressure difference <span id="math-ex1-dp-q" class="notranslate" translate="no"></span>.</span>
+                        <span class="th-text"> เมตร จงหาความเร็วในหน้าตัดที่ 2 และความต่างความดัน <span id="math-ex1-dp-q-th" class="notranslate" translate="no"></span></span>
+                        <br>
+                        <span class="text-slate-500 text-sm mt-3 block bg-slate-50 p-3 rounded-lg w-fit border border-slate-100 mx-auto md:mx-0">
+                            (<span id="math-ex1-water" class="notranslate" translate="no"></span>)
+                        </span>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl border border-slate-200 text-slate-800 shadow-inner flex flex-col items-center">
+                        <div class="text-blue-700 font-bold mb-3 border-b border-blue-100 pb-2 w-full text-center">
+                            <span class="en-text">Step 1: Calculate Velocity 2</span>
+                            <span class="th-text">ขั้นที่ 1: หาความเร็วที่ 2</span> 
+                            <span id="math-e1-v2" class="notranslate" translate="no"></span>
+                        </div>
+                        <div id="solEx1Eq1" class="math-wrapper notranslate w-full" translate="no"></div>
+                        
+                        <div class="text-blue-700 font-bold mb-3 mt-8 border-b border-blue-100 pb-2 w-full text-center">
+                            <span class="en-text">Step 2: Calculate Pressure Difference</span>
+                            <span class="th-text">ขั้นที่ 2: หาความต่างศักย์ความดัน</span> 
+                            <span id="math-e1-dp" class="notranslate" translate="no"></span>
+                        </div>
+                        <div id="solEx1Eq2" class="math-wrapper notranslate w-full" translate="no"></div>
+                    </div>
+                </div>
+
+                <!-- Example 2 -->
+                <div class="border border-emerald-200 rounded-2xl p-6 md:p-8 bg-emerald-50/30 flex flex-col shadow-sm">
+                    <h3 class="font-bold text-emerald-900 text-xl mb-5 flex items-center gap-3">
+                        <span class="bg-emerald-600 text-white px-3 py-1 rounded-md text-sm shadow-sm">Ex 2</span>
+                        <span class="en-text">Torricelli's Law</span><span class="th-text">กฎของทอร์ริเชลลี (ถังน้ำรั่ว)</span>
+                    </h3>
+
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 mb-6 shadow-sm flex justify-center">
+                        <svg viewBox="0 0 300 220" class="w-full max-w-sm h-auto">
+                            <rect x="50" y="50" width="150" height="150" fill="#bae6fd" />
+                            <path d="M 200 170 Q 240 170 270 210" stroke="#bae6fd" stroke-width="12" fill="none" />
+                            <path d="M 50 30 L 50 200 L 200 200 L 200 180" stroke="#475569" stroke-width="4" fill="none" />
+                            <path d="M 200 160 L 200 30" stroke="#475569" stroke-width="4" fill="none" />
+                            <defs>
+                                <marker id="arrow2" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b" /></marker>
+                                <marker id="arrow-v2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#059669" /></marker>
+                            </defs>
+                            <line x1="30" y1="50" x2="50" y2="50" stroke="#64748b" stroke-width="2" />
+                            <line x1="30" y1="170" x2="50" y2="170" stroke="#64748b" stroke-width="2" />
+                            <line x1="40" y1="50" x2="40" y2="170" stroke="#64748b" stroke-width="2" marker-start="url(#arrow2)" marker-end="url(#arrow2)" />
+                            <text x="25" y="115" font-family="sans-serif" font-size="16" fill="#1e293b" font-weight="bold">h</text>
+                            <path d="M 210 175 L 250 175" stroke="#059669" stroke-width="2" marker-end="url(#arrow-v2)"/>
+                            <text x="235" y="165" font-family="sans-serif" font-size="16" fill="#059669" font-weight="bold">v₂</text>
+                            <text x="125" y="40" font-family="sans-serif" font-size="14" fill="#0369a1" font-weight="bold">v₁ ≈ 0, P₁ = P_atm</text>
+                            <text x="260" y="145" font-family="sans-serif" font-size="14" fill="#0369a1" font-weight="bold">P₂ = P_atm</text>
+                        </svg>
+                    </div>
+                    
+                    <div class="text-[15px] text-slate-700 mb-6 leading-loose bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                        <span class="en-text">A large water tank has a small hole. Given the height of water above the hole is </span>
+                        <span class="th-text">ถังน้ำขนาดใหญ่มีรูรั่วเล็กๆ กำหนดความสูงของระดับน้ำเหนือรูรั่วคือ </span>
+                        <input type="number" id="inEx2H" value="5" step="0.5" class="inline-input" oninput="runAllCalculations()">
+                        <span class="en-text"> meters, find the exit velocity.</span>
+                        <span class="th-text"> เมตร จงหาความเร็วของน้ำที่พุ่งออกมา</span>
+                        <br>
+                        <span class="text-slate-500 text-sm mt-3 block bg-slate-50 p-3 rounded-lg w-fit border border-slate-100 mx-auto md:mx-0">
+                            (<span id="math-ex2-g" class="notranslate" translate="no"></span>)
+                        </span>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl border border-slate-200 text-slate-800 shadow-inner flex flex-col items-center">
+                        <div class="text-emerald-700 font-bold mb-3 border-b border-emerald-100 pb-2 w-full text-center">
+                            <span class="en-text">Applying Bernoulli's Equation:</span>
+                            <span class="th-text">ประยุกต์ใช้สมการแบร์นูลลี:</span>
+                        </div>
+                        <div id="solEx2Eq1" class="math-wrapper notranslate w-full" translate="no"></div>
+                        
+                        <div class="text-[15px] my-5 text-slate-700 bg-emerald-50/50 p-6 rounded-xl border border-emerald-100 shadow-sm leading-loose w-full text-center">
+                            <strong>
+                                <span class="en-text">Assumptions:</span>
+                                <span class="th-text">ข้อกำหนด:</span>
+                            </strong><br>
+                            1. <span class="en-text">Open to atmosphere</span><span class="th-text">เปิดสัมผัสอากาศ</span>: <span id="math-e2-a1" class="notranslate inline-block" translate="no"></span><br>
+                            2. <span class="en-text">Large tank surface drops slowly</span><span class="th-text">ถังใหญ่ (ผิวน้ำลดช้ามาก)</span>: <span id="math-e2-a2" class="notranslate inline-block" translate="no"></span><br>
+                            3. <span class="en-text">Reference height at hole</span><span class="th-text">ให้รูรั่วเป็นจุดอ้างอิง</span>: <span id="math-e2-a3" class="notranslate inline-block" translate="no"></span>, <span id="math-e2-a4" class="notranslate inline-block" translate="no"></span>
+                        </div>
+                        
+                        <div class="text-emerald-700 font-bold mb-3 mt-6 border-b border-emerald-100 pb-2 w-full text-center">
+                            <span class="en-text">Simplified to Torricelli's Law:</span>
+                            <span class="th-text">ลดรูปลงเหลือกฎของทอร์ริเชลลี:</span>
+                        </div>
+                        <div id="solEx2Eq2" class="math-wrapper notranslate w-full" translate="no"></div>
+                    </div>
+                </div>
+                
+                <!-- Example 3 -->
+                <div class="border border-purple-200 rounded-2xl p-6 md:p-8 bg-purple-50/30 flex flex-col shadow-sm">
+                    <h3 class="font-bold text-purple-900 text-xl mb-5 flex items-center gap-3">
+                        <span class="bg-purple-600 text-white px-3 py-1 rounded-md text-sm shadow-sm">Ex 3</span>
+                        <span class="en-text">Airplane Lift Force</span><span class="th-text">แรงยกปีกเครื่องบิน</span>
+                    </h3>
+
+                    <div class="bg-white p-6 rounded-xl border border-slate-200 mb-6 shadow-sm flex justify-center">
+                        <svg viewBox="0 0 500 230" class="w-full max-w-lg h-auto mx-auto drop-shadow-sm">
+                            <defs>
+                                <marker id="arrow-air" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+                                    <path d="M 0 0 L 10 5 L 0 10 z" fill="#3b82f6" />
+                                </marker>
+                                <marker id="arrow-lift" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                                    <path d="M 0 0 L 10 5 L 0 10 z" fill="#8b5cf6" />
+                                </marker>
+                                <linearGradient id="wingGrad" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stop-color="#f8fafc" />
+                                    <stop offset="100%" stop-color="#cbd5e1" />
+                                </linearGradient>
+                            </defs>
+
+                            <!-- Streamlines Top - ความเร็วสูง โค้งลอยข้ามและถูกบีบอัดแคบลง -->
+                            <path d="M 0 60 C 50 60, 100 5, 220 5 C 350 5, 420 60, 500 60" stroke="#3b82f6" stroke-width="2" fill="none" stroke-dasharray="6,4" marker-end="url(#arrow-air)"/>
+                            <path d="M 0 85 C 50 85, 100 30, 220 30 C 350 30, 420 85, 500 85" stroke="#3b82f6" stroke-width="2" fill="none" stroke-dasharray="6,4" marker-end="url(#arrow-air)"/>
+                            <path d="M 0 110 C 50 110, 100 55, 220 55 C 350 55, 420 110, 500 110" stroke="#3b82f6" stroke-width="2" fill="none" stroke-dasharray="6,4" marker-end="url(#arrow-air)"/>
+
+                            <!-- Streamlines Bottom - ความเร็วต่ำ กระจายตัวออกและลอดใต้ปีก -->
+                            <path d="M 0 140 C 50 140, 120 155, 220 155 C 320 155, 420 140, 500 140" stroke="#3b82f6" stroke-width="2" fill="none" stroke-dasharray="6,4" marker-end="url(#arrow-air)"/>
+                            <path d="M 0 165 C 50 165, 120 175, 220 175 C 320 175, 420 165, 500 165" stroke="#3b82f6" stroke-width="2" fill="none" stroke-dasharray="6,4" marker-end="url(#arrow-air)"/>
+
+                            <!-- Airfoil (หยดน้ำสมจริง วาดทับเส้นลม) -->
+                            <path d="M 50 125 C 50 60, 180 70, 420 125 C 200 140, 80 140, 50 125 Z" fill="url(#wingGrad)" stroke="#475569" stroke-width="2.5" />
+                            
+                            <!-- Lift Vector (ขยับไม่ให้ทับข้อความ) -->
+                            <path d="M 220 110 L 220 15" stroke="#8b5cf6" stroke-width="4" marker-end="url(#arrow-lift)"/>
+
+                            <!-- Text Labels -->
+                            <text x="250" y="25" class="en-text" text-anchor="middle" font-family="Sarabun, sans-serif" font-size="14" fill="#1d4ed8" font-weight="bold">High Speed (v), Low Pressure (P)</text>
+                            <text x="250" y="25" class="th-text" text-anchor="middle" font-family="Sarabun, sans-serif" font-size="14" fill="#1d4ed8" font-weight="bold">ความเร็วสูง (v), ความดันต่ำ (P)</text>
+                            
+                            <text x="250" y="210" class="en-text" text-anchor="middle" font-family="Sarabun, sans-serif" font-size="14" fill="#1d4ed8" font-weight="bold">Low Speed (v), High Pressure (P)</text>
+                            <text x="250" y="210" class="th-text" text-anchor="middle" font-family="Sarabun, sans-serif" font-size="14" fill="#1d4ed8" font-weight="bold">ความเร็วต่ำ (v), ความดันสูง (P)</text>
+
+                            <text x="180" y="113" class="en-text" text-anchor="middle" font-family="Sarabun, sans-serif" font-size="14" fill="#475569" font-weight="bold">Wing Area (A)</text>
+                            <text x="180" y="113" class="th-text" text-anchor="middle" font-family="Sarabun, sans-serif" font-size="14" fill="#475569" font-weight="bold">พื้นที่ปีก (A)</text>
+
+                            <text x="210" y="70" class="en-text" text-anchor="end" font-family="Sarabun, sans-serif" font-size="16" fill="#7c3aed" font-weight="bold">Lift (F)</text>
+                            <text x="210" y="70" class="th-text" text-anchor="end" font-family="Sarabun, sans-serif" font-size="16" fill="#7c3aed" font-weight="bold">แรงยก (F)</text>
+                        </svg>
+                    </div>
+                    
+                    <div class="text-[15px] text-slate-700 mb-6 leading-loose bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                        <span class="en-text">Air flows past an airplane wing. The speed of air over the top surface is </span>
+                        <span class="th-text">อากาศไหลผ่านปีกเครื่องบิน ความเร็วของอากาศที่ผิวบนปีกคือ </span>
+                        <input type="number" id="inEx3V1" value="250" step="5" class="inline-input" oninput="runAllCalculations()">
+                        
+                        <span class="en-text"> m/s, and under the bottom surface is </span>
+                        <span class="th-text"> m/s และความเร็วที่ผิวล่างคือ </span>
+                        <input type="number" id="inEx3V2" value="220" step="5" class="inline-input" oninput="runAllCalculations()">
+                        
+                        <span class="en-text"> m/s. Given the wing area is </span>
+                        <span class="th-text"> m/s กำหนดให้พื้นที่ปีกคือ </span>
+                        <input type="number" id="inEx3A" value="30" step="1" class="inline-input" oninput="runAllCalculations()">
+                        
+                        <span class="en-text"> m², find the lift force generated.</span>
+                        <span class="th-text"> m² จงหาแรงยก (Lift Force) ที่เกิดขึ้น</span>
+                        <br>
+                        <span class="text-slate-500 text-sm mt-3 block bg-slate-50 p-3 rounded-lg w-fit border border-slate-100 mx-auto md:mx-0">
+                            (<span id="math-ex3-air" class="notranslate" translate="no"></span>)
+                        </span>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl border border-slate-200 text-slate-800 shadow-inner flex flex-col items-center">
+                        <div class="text-purple-700 font-bold mb-3 border-b border-purple-100 pb-2 w-full text-center">
+                            <span class="en-text">Step 1: Pressure Difference</span>
+                            <span class="th-text">ขั้นที่ 1: หาความต่างศักย์ของความดัน</span> 
+                            <span id="math-e3-dp" class="notranslate" translate="no"></span>
+                        </div>
+                        <div id="solEx3Eq1" class="math-wrapper notranslate w-full" translate="no"></div>
+                        
+                        <div class="text-purple-700 font-bold mb-3 mt-8 border-b border-purple-100 pb-2 w-full text-center">
+                            <span class="en-text">Step 2: Lift Force</span>
+                            <span class="th-text">ขั้นที่ 2: หาแรงยกปีก</span> 
+                            <span id="math-e3-f" class="notranslate" translate="no"></span>
+                        </div>
+                        <div id="solEx3Eq2" class="math-wrapper notranslate w-full" translate="no"></div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-800 text-slate-400 text-sm py-8 text-center mt-8">
+        <div class="max-w-5xl mx-auto px-4">
+            <p>
+                <span class="en-text">Credits:</span><span class="th-text">แหล่งข้อมูลอ้างอิง:</span> 
+                <a href="https://OpenSimLab.org" target="_blank" class="text-blue-400 hover:text-blue-300 transition-colors font-medium">OpenSimLab.org</a>
+            </p>
+            <p class="mt-2 text-slate-500">
+                <span class="en-text">Recreated interactively by Gemini</span><span class="th-text">สร้างสรรค์แบบจำลองอินเทอร์แอกทีฟโดย Gemini</span>
+            </p>
+        </div>
+    </footer>
+
+    <!-- =========================================================================
+         JavaScript Logic (ระบบประมวลผล Anti-Sandbox MathJax และ Canvas)
+         ========================================================================= -->
+    <script>
+        let currentLang = 'en';
+
+        function switchLanguage() {
+            const body = document.body;
+            const toggleBox = document.getElementById('langToggleBtn');
+            
+            if (currentLang === 'en') {
+                body.classList.remove('lang-en');
+                body.classList.add('lang-th');
+                toggleBox.classList.remove('lang-en-active');
+                toggleBox.classList.add('lang-th-active');
+                currentLang = 'th';
+            } else {
+                body.classList.remove('lang-th');
+                body.classList.add('lang-en');
+                toggleBox.classList.remove('lang-th-active');
+                toggleBox.classList.add('lang-en-active');
+                currentLang = 'en';
+            }
+            runAllCalculations();
+        }
+
+        // ==========================================
+        // 1. Math String Builder (หลบการตัดคำและแปลภาษาของ Google Sites/Chrome)
+        // ==========================================
+        let mathJaxQueue = Promise.resolve();
+
+        function setMath(elementId, texString, isDisplay = false) {
+            const el = document.getElementById(elementId);
+            if (!el) return;
+            
+            el.setAttribute('translate', 'no');
+            el.classList.add('notranslate');
+            
+            el.innerHTML = isDisplay ? `$$${texString}$$` : `\\(${texString}\\)`;
+            
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                mathJaxQueue = mathJaxQueue.then(() => {
+                    MathJax.typesetClear([el]);
+                    return MathJax.typesetPromise([el]);
+                }).catch(err => console.log(err));
+            }
+        }
+
+        // ==========================================
+        // 2. Main Calculation & Equation Logic
+        // ==========================================
+        let simCurrentV2 = 0, simCurrentP1 = 0;
+        let currentA1 = 3, currentA2 = 1.5, currentV1 = 2, currentP2 = 101300, currentH1 = 0, currentH2 = 4;
+        
+        function runAllCalculations() {
+            try {
+                const bs = String.fromCharCode(92);
+                const nl = bs + bs; 
+
+                // ----------------------------------------
+                // Static Texts Setup
+                // ----------------------------------------
+                setMath('math-proof-0', `W = ${bs}Delta E_k + ${bs}Delta E_p`);
+                setMath('math-proof-0-th', `W = ${bs}Delta E_k + ${bs}Delta E_p`);
+                setMath('math-proof-1', `P_1V - P_2V = ${bs}left(${bs}frac{1}{2}mv_2^2 - ${bs}frac{1}{2}mv_1^2${bs}right) + (mgh_2 - mgh_1)`, true);
+                setMath('math-proof-2', `V`);
+                setMath('math-proof-3', `${bs}rho = ${bs}frac{m}{V}`);
+                setMath('math-proof-2-th', `V`);
+                setMath('math-proof-3-th', `${bs}rho = ${bs}frac{m}{V}`);
+                setMath('math-proof-4', `P_1 - P_2 = ${bs}left(${bs}frac{1}{2}${bs}rho v_2^2 - ${bs}frac{1}{2}${bs}rho v_1^2${bs}right) + (${bs}rho g h_2 - ${bs}rho g h_1)`, true);
+                setMath('math-proof-5', `P_1 + ${bs}frac{1}{2}${bs}rho v_1^2 + ${bs}rho g h_1 = P_2 + ${bs}frac{1}{2}${bs}rho v_2^2 + ${bs}rho g h_2`, true);
+                
+                setMath('math-var-p', `P`); setMath('math-var-p-th', `P`);
+                setMath('math-var-rho', `${bs}rho`); setMath('math-var-rho-th', `${bs}rho`);
+                setMath('math-var-v', `v`); setMath('math-var-v-th', `v`);
+                setMath('math-var-h', `h`); setMath('math-var-h-th', `h`);
+                
+                setMath('math-sim-water', `${bs}rho = 1000 ${bs}text{ kg/m}^3, g = 9.81 ${bs}text{ m/s}^2`);
+                setMath('math-sim-water-th', `${bs}rho = 1000 ${bs}text{ kg/m}^3, g = 9.81 ${bs}text{ m/s}^2`);
+                
+                setMath('math-lbl-a1', `A_1`); setMath('math-lbl-a1-th', `A_1`);
+                setMath('math-lbl-a2', `A_2`); setMath('math-lbl-a2-th', `A_2`);
+                setMath('math-lbl-v1', `v_1`); setMath('math-lbl-v1-th', `v_1`);
+                
+                setMath('math-lbl-p2', `P_2`); setMath('math-lbl-p2-th', `P_2`);
+                
+                setMath('math-lbl-h1', `h_1`); setMath('math-lbl-h1-th', `h_1`);
+                setMath('math-lbl-h2', `h_2`); setMath('math-lbl-h2-th', `h_2`);
+                setMath('math-res-v2', `v_2`); setMath('math-res-v2-th', `v_2`);
+                
+                setMath('math-res-dp', `(${bs}Delta P)`); setMath('math-res-dp-th', `(${bs}Delta P)`);
+
+                setMath('math-ex1-water', `${bs}rho = 1000 ${bs}text{ kg/m}^3, g = 9.81 ${bs}text{ m/s}^2`);
+                setMath('math-e1-v2', `(v_2)`);
+                setMath('math-e1-dp', `(${bs}Delta P)`);
+                setMath('math-ex1-dp-q', `(${bs}Delta P = P_1 - P_2)`); setMath('math-ex1-dp-q-th', `(${bs}Delta P = P_1 - P_2)`);
+                
+                setMath('math-ex2-g', `g = 9.81 ${bs}text{ m/s}^2`);
+                setMath('math-e2-a1', `P_1 = P_2 = P_{atm}`);
+                setMath('math-e2-a2', `v_1 ${bs}approx 0`);
+                setMath('math-e2-a3', `h_2 = 0`);
+                
+                setMath('math-ex3-air', `${bs}rho_{air} = 1.2 ${bs}text{ kg/m}^3`);
+                setMath('math-e3-dp', `(${bs}Delta P)`);
+                setMath('math-e3-f', `(F)`);
+
+                // ----------------------------------------
+                // Interactive Simulation Logic
+                // ----------------------------------------
+                const elA1 = document.getElementById('simA1');
+                const sA1 = elA1 ? Number(elA1.value) || 3 : 3;
+                const elA2 = document.getElementById('simA2');
+                const sA2 = elA2 ? Number(elA2.value) || 1.5 : 1.5;
+                const elV1 = document.getElementById('simV1');
+                const sV1 = elV1 ? Number(elV1.value) || 2 : 2;
+                
+                const elP2 = document.getElementById('simP2');
+                const sP2 = elP2 ? Number(elP2.value) * 1000 || 101000 : 101000;
+                
+                const elH1 = document.getElementById('simH1');
+                const sH1_raw = elH1 ? Number(elH1.value) : 0;
+                const sH1 = isNaN(sH1_raw) ? 0 : sH1_raw;
+                
+                const elH2 = document.getElementById('simH2');
+                const sH2_raw = elH2 ? Number(elH2.value) : 4;
+                const sH2 = isNaN(sH2_raw) ? 4 : sH2_raw;
+                
+                currentA1 = sA1; currentA2 = sA2; currentV1 = sV1; currentP2 = sP2; currentH1 = sH1; currentH2 = sH2;
+
+                const rho = 1000;
+                const g = 9.81;
+
+                const sV2 = (sA1 / sA2) * sV1;
+                simCurrentV2 = sV2;
+                
+                // คำนวณความต่างศักย์ความดัน dP = P1 - P2
+                const term1 = 0.5 * rho * (Math.pow(sV2, 2) - Math.pow(sV1, 2));
+                const term2 = rho * g * (sH2 - sH1);
+                const sDP = term1 + term2; 
+                
+                const sP1 = sP2 + sDP;
+                simCurrentP1 = sP1;
+
+                if(document.getElementById('lblA1')) document.getElementById('lblA1').innerText = sA1.toFixed(1);
+                if(document.getElementById('lblA2')) document.getElementById('lblA2').innerText = sA2.toFixed(1);
+                if(document.getElementById('lblV1')) document.getElementById('lblV1').innerText = sV1.toFixed(1);
+                if(document.getElementById('lblP2')) document.getElementById('lblP2').innerText = (sP2/1000).toFixed(0);
+                if(document.getElementById('lblH1')) document.getElementById('lblH1').innerText = sH1.toFixed(1);
+                if(document.getElementById('lblH2')) document.getElementById('lblH2').innerText = sH2.toFixed(1);
+
+                setMath('live-calc-v2', `${bs}begin{aligned} A_1v_1 &= A_2v_2 ${nl} v_2 &= ${bs}frac{A_1}{A_2} v_1 ${nl} v_2 &= ${bs}frac{${sA1.toFixed(1)}}{${sA2.toFixed(1)}} (${sV1.toFixed(1)}) = ${bs}mathbf{${sV2.toFixed(2)}${bs}text{ m/s}} ${bs}end{aligned}`, true);
+                
+                setMath('live-calc-dp', `${bs}begin{aligned} P_1 + ${bs}frac{1}{2}${bs}rho v_1^2 + ${bs}rho g h_1 &= P_2 + ${bs}frac{1}{2}${bs}rho v_2^2 + ${bs}rho g h_2 ${nl} P_1 - P_2 &= ${bs}frac{1}{2}${bs}rho(v_2^2 - v_1^2) + ${bs}rho g(h_2 - h_1) ${nl} ${bs}Delta P &= ${bs}frac{1}{2}(1000)(${sV2.toFixed(2)}^2 - ${sV1.toFixed(1)}^2) + 1000(9.81)(${sH2.toFixed(1)} - ${sH1.toFixed(1)}) ${nl} ${bs}Delta P &= ${term1 >= 0 ? '' : '-'}${Math.abs(term1).toFixed(1)} ${term2 >= 0 ? '+' : '-'} ${Math.abs(term2).toFixed(1)} ${nl} ${bs}Delta P &= ${sDP.toFixed(1)}${bs}text{ Pa} = ${bs}mathbf{${(sDP/1000).toFixed(2)}${bs}text{ kPa}} ${bs}end{aligned}`, true);
+
+                if(document.getElementById('resV2')) document.getElementById('resV2').innerHTML = `${sV2.toFixed(2)} <span class="text-base font-normal text-blue-400">m/s</span>`;
+                if(document.getElementById('resDP')) document.getElementById('resDP').innerHTML = `${(sDP/1000).toFixed(2)} <span id="resDPUnit" class="text-base font-normal text-blue-400">kPa</span>`;
+                
+                const resDPContainer = document.getElementById('resDPContainer');
+                const resDPHeader = document.getElementById('resDPHeader');
+                const resDPInnerBox = document.getElementById('resDPInnerBox');
+                const resDPLabel = document.getElementById('resDPLabel');
+                const resDP = document.getElementById('resDP');
+                const resDPUnit = document.getElementById('resDPUnit');
+                const liveCalcDP = document.getElementById('live-calc-dp');
+
+                if (resDPContainer) {
+                    if(sP1 < 0) {
+                        resDPContainer.className = "bg-white p-6 rounded-2xl border border-red-200 shadow-sm flex flex-col items-center transition-colors duration-300";
+                        resDPHeader.className = "font-bold text-red-800 mb-4 text-sm uppercase tracking-widest border-b border-red-200 pb-3 w-full text-center transition-colors";
+                        liveCalcDP.className = "text-red-600 text-base math-wrapper notranslate w-full transition-colors";
+                        resDPInnerBox.className = "mt-6 pt-5 border-t border-red-100 text-center bg-red-50 rounded-xl p-4 w-full md:w-auto self-center transition-colors duration-300";
+                        resDPLabel.className = "text-xs text-red-500 uppercase tracking-widest font-bold mb-2 transition-colors";
+                        resDP.className = "text-4xl font-black text-red-600 transition-colors";
+                        if(resDPUnit) resDPUnit.className = "text-lg font-semibold text-red-400";
+                    } else {
+                        resDPContainer.className = "bg-white p-6 rounded-2xl border border-blue-100 shadow-sm flex flex-col items-center transition-colors duration-300";
+                        resDPHeader.className = "font-bold text-blue-800 mb-4 text-sm uppercase tracking-widest border-b border-blue-100 pb-3 w-full text-center transition-colors";
+                        liveCalcDP.className = "text-blue-700 text-base math-wrapper notranslate w-full transition-colors";
+                        resDPInnerBox.className = "mt-6 pt-5 border-t border-blue-100 text-center bg-blue-50/50 rounded-xl p-4 w-full md:w-auto self-center transition-colors duration-300";
+                        resDPLabel.className = "text-xs text-blue-500 uppercase tracking-widest font-bold mb-2 transition-colors";
+                        resDP.className = "text-4xl font-black text-blue-700 transition-colors";
+                        if(resDPUnit) resDPUnit.className = "text-lg font-semibold text-blue-400";
+                    }
+                }
+
+                // ----------------------------------------
+                // Example 1 Logic (dP)
+                // ----------------------------------------
+                const inEx1A1 = document.getElementById('inEx1A1');
+                const e1A1 = inEx1A1 ? Number(inEx1A1.value) || 3 : 3;
+                const inEx1A2 = document.getElementById('inEx1A2');
+                const e1A2 = inEx1A2 ? Number(inEx1A2.value) || 1.5 : 1.5; 
+                const inEx1V1 = document.getElementById('inEx1V1');
+                const e1V1 = inEx1V1 ? Number(inEx1V1.value) || 2 : 2;
+                const inEx1H1 = document.getElementById('inEx1H1');
+                const e1H1 = inEx1H1 ? Number(inEx1H1.value) || 0 : 0;
+                const inEx1H2 = document.getElementById('inEx1H2');
+                const e1H2 = inEx1H2 ? Number(inEx1H2.value) || 0 : 0;
+
+                const e1V2 = (e1A1 / (e1A2===0?0.0001:e1A2)) * e1V1; 
+                const e1T1 = 0.5 * rho * (Math.pow(e1V1, 2) - Math.pow(e1V2, 2));
+                const e1T2 = rho * g * (e1H1 - e1H2);
+                const e1DP = e1T1 + e1T2; 
+
+                setMath('solEx1Eq1', `${bs}begin{aligned} A_1 v_1 &= A_2 v_2 ${nl} v_2 &= ${bs}frac{A_1}{A_2} v_1 ${nl} v_2 &= ${bs}frac{${e1A1}}{${e1A2}} (${e1V1}) = ${bs}mathbf{${e1V2.toFixed(2)}${bs}text{ m/s}} ${bs}end{aligned}`, true);
+                setMath('solEx1Eq2', `${bs}begin{aligned} P_1 + ${bs}frac{1}{2}${bs}rho v_1^2 + ${bs}rho g h_1 &= P_2 + ${bs}frac{1}{2}${bs}rho v_2^2 + ${bs}rho g h_2 ${nl} P_1 - P_2 &= ${bs}frac{1}{2}${bs}rho (v_2^2 - v_1^2) + ${bs}rho g(h_2 - h_1) ${nl} ${bs}Delta P &= ${bs}frac{1}{2}(1000)(${e1V2.toFixed(2)}^2 - ${e1V1.toFixed(1)}^2) + (1000)(9.81)(${e1H2} - ${e1H1}) ${nl} ${bs}Delta P &= ${-e1T1 >= 0 ? '' : '-'}${Math.abs(e1T1).toFixed(1)} ${-e1T2 >= 0 ? '+' : '-'} ${Math.abs(e1T2).toFixed(1)} ${nl} ${bs}Delta P &= ${-e1DP.toFixed(1)}${bs}text{ Pa} = ${bs}mathbf{${(-e1DP/1000).toFixed(2)}${bs}text{ kPa}} ${bs}end{aligned}`, true);
+
+                // ----------------------------------------
+                // Example 2 Logic
+                // ----------------------------------------
+                const inEx2H = document.getElementById('inEx2H');
+                const e2H = inEx2H ? Number(inEx2H.value) || 0 : 0;
+                const e2V = Math.sqrt(2 * g * e2H);
+                
+                setMath('math-e2-a4', `h_1 = ${e2H}${bs}text{ m}`);
+                setMath('solEx2Eq1', `P_1 + ${bs}frac{1}{2}${bs}rho v_1^2 + ${bs}rho g h_1 = P_2 + ${bs}frac{1}{2}${bs}rho v_2^2 + ${bs}rho g h_2`, true);
+                setMath('solEx2Eq2', `${bs}begin{aligned} ${bs}rho g h_1 &= ${bs}frac{1}{2}${bs}rho v_2^2 ${nl} v_2 &= ${bs}sqrt{2 g h_1} ${nl} v_2 &= ${bs}sqrt{2(9.81)(${e2H})} = ${bs}mathbf{${e2V.toFixed(2)}${bs}text{ m/s}} ${bs}end{aligned}`, true);
+
+                // ----------------------------------------
+                // Example 3 Logic
+                // ----------------------------------------
+                const inEx3V1 = document.getElementById('inEx3V1');
+                const inEx3V2 = document.getElementById('inEx3V2');
+                const inEx3A = document.getElementById('inEx3A');
+                
+                const e3V1 = inEx3V1 ? Number(inEx3V1.value) || 0 : 0;
+                const e3V2 = inEx3V2 ? Number(inEx3V2.value) || 0 : 0;
+                const e3A = inEx3A ? Number(inEx3A.value) || 0 : 0;
+                const rhoAir = 1.2;
+
+                const e3DP = 0.5 * rhoAir * (Math.pow(e3V1, 2) - Math.pow(e3V2, 2));
+                const e3F = e3DP * e3A;
+
+                setMath('solEx3Eq1', `${bs}begin{aligned} P_{bottom} - P_{top} &= ${bs}frac{1}{2}${bs}rho_{air} (v_{top}^2 - v_{bottom}^2) ${nl} ${bs}Delta P &= ${bs}frac{1}{2}(1.2)(${e3V1}^2 - ${e3V2}^2) ${nl} ${bs}Delta P &= 0.6(${Math.pow(e3V1, 2)} - ${Math.pow(e3V2, 2)}) ${nl} ${bs}Delta P &= ${e3DP.toFixed(1)}${bs}text{ Pa} ${bs}end{aligned}`, true);
+                setMath('solEx3Eq2', `${bs}begin{aligned} F &= ${bs}Delta P ${bs}times A ${nl} F &= ${e3DP.toFixed(1)} ${bs}times ${e3A} ${nl} F &= ${bs}mathbf{${e3F.toFixed(1)}${bs}text{ N}} ${bs}end{aligned}`, true);
+
+            } catch (e) {
+                console.error("Calculation Error:", e);
+            }
+        }
+
+        // ==========================================
+        // 3. Canvas Simulation 
+        // ==========================================
+        let canvas = document.getElementById('pipeCanvas');
+        let ctx;
+        let particles = [];
+        const numParticles = 120;
+        let animationFrameId;
+
+        function initParticles() {
+            particles = [];
+            let w = canvas.logicalWidth || canvas.width || 800;
+            for (let i = 0; i < numParticles; i++) {
+                particles.push({
+                    x: Math.random() * w,
+                    y: 0,
+                    relY: Math.random() * 2 - 1 
+                });
+            }
+        }
+
+        function resizeCanvas() {
+            const container = document.getElementById('sim-container');
+            if (!container || !ctx) return;
+            
+            const rect = container.getBoundingClientRect();
+            let w = rect.width;
+            let h = rect.height;
+            
+            if (w === 0 || h === 0) {
+                w = container.clientWidth || 800;
+                h = container.clientHeight || 450;
+            }
+            if (w === 0) w = 800;
+            if (h === 0) h = 450;
+            
+            const dpr = window.devicePixelRatio || 1;
+            
+            canvas.width = w * dpr;
+            canvas.height = h * dpr;
+            canvas.style.width = `${w}px`;
+            canvas.style.height = `${h}px`;
+            
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.scale(dpr, dpr);
+            
+            canvas.logicalWidth = w;
+            canvas.logicalHeight = h;
+
+            initParticles();
+        }
+
+        function drawLoop() {
+            if (!ctx) return;
+            
+            const w = canvas.logicalWidth || 800;
+            const h = canvas.logicalHeight || 450; 
+            
+            ctx.clearRect(0, 0, w, h);
+            
+            const visualScaleH = 12; 
+            const scaleArea = 8; 
+            
+            const h1 = currentA1 * scaleArea;
+            const h2 = currentA2 * scaleArea;
+
+            const topY1 = - (currentH1 * visualScaleH) - h1 - 130; 
+            const topY2 = - (currentH2 * visualScaleH) - h2 - 130;
+            const topY = Math.min(topY1, topY2);
+            const bottomY = 20; 
+            
+            const totalHeight = bottomY - topY;
+            const datumY = (h - totalHeight) / 2 - topY; 
+            
+            const cY1 = datumY - (currentH1 * visualScaleH);
+            const cY2 = datumY - (currentH2 * visualScaleH);
+            
+            const transitionStartX = w * 0.35;
+            const transitionEndX = w * 0.65;
+
+            // Datum Line
+            ctx.beginPath();
+            ctx.moveTo(0, datumY);
+            ctx.lineTo(w, datumY);
+            ctx.strokeStyle = '#9ca3af';
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([5, 5]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            ctx.fillStyle = '#64748b';
+            ctx.font = '12px "Sarabun", sans-serif';
+            ctx.textAlign = 'right';
+            ctx.fillText(currentLang === 'en' ? 'Datum (h=0)' : 'ระดับอ้างอิง (h=0)', w - 20, datumY - 10);
+
+            // Fluid Pipe Body
+            ctx.beginPath();
+            ctx.moveTo(0, cY1 - h1);
+            ctx.lineTo(transitionStartX, cY1 - h1);
+            ctx.bezierCurveTo(transitionStartX + w*0.1, cY1 - h1, transitionEndX - w*0.1, cY2 - h2, transitionEndX, cY2 - h2);
+            ctx.lineTo(w, cY2 - h2);
+            ctx.lineTo(w, cY2 + h2);
+            ctx.lineTo(transitionEndX, cY2 + h2);
+            ctx.bezierCurveTo(transitionEndX - w*0.1, cY2 + h2, transitionStartX + w*0.1, cY1 + h1, transitionStartX, cY1 + h1);
+            ctx.lineTo(0, cY1 + h1);
+            ctx.closePath();
+            
+            let gradient = ctx.createLinearGradient(0, 0, 0, h);
+            gradient.addColorStop(0, "#bfdbfe");
+            gradient.addColorStop(1, "#93c5fd");
+            ctx.fillStyle = gradient;
+            ctx.fill();
+
+            // Pipe Borders
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = '#1e3a8a';
+            ctx.lineJoin = 'round';
+            ctx.lineCap = 'round';
+            
+            ctx.beginPath();
+            ctx.moveTo(0, cY1 - h1);
+            ctx.lineTo(transitionStartX, cY1 - h1);
+            ctx.bezierCurveTo(transitionStartX + w*0.1, cY1 - h1, transitionEndX - w*0.1, cY2 - h2, transitionEndX, cY2 - h2);
+            ctx.lineTo(w, cY2 - h2);
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(0, cY1 + h1);
+            ctx.lineTo(transitionStartX, cY1 + h1);
+            ctx.bezierCurveTo(transitionStartX + w*0.1, cY1 + h1, transitionEndX - w*0.1, cY2 + h2, transitionEndX, cY2 + h2);
+            ctx.lineTo(w, cY2 + h2);
+            ctx.stroke();
+
+            // Analog Pressure Gauge
+            function drawPressureGauge(x, pipeCenterY, pipeRadius, pressurePa, label) {
+                const p_kPa = pressurePa / 1000;
+                const gaugeRadius = 35;
+                const gaugeY = pipeCenterY - pipeRadius - gaugeRadius - 15;
+
+                // Stand
+                ctx.beginPath();
+                ctx.moveTo(x - 5, pipeCenterY - pipeRadius);
+                ctx.lineTo(x - 5, gaugeY + gaugeRadius);
+                ctx.lineTo(x + 5, gaugeY + gaugeRadius);
+                ctx.lineTo(x + 5, pipeCenterY - pipeRadius);
+                ctx.fillStyle = '#64748b';
+                ctx.fill();
+                ctx.strokeStyle = '#334155';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+
+                // Value Text (Above gauge)
+                ctx.fillStyle = '#0f172a';
+                ctx.font = 'bold 14px "Sarabun", sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(`${label} = ${p_kPa.toFixed(0)} kPa`, x, gaugeY - gaugeRadius - 12);
+
+                // Outer Shell
+                ctx.beginPath();
+                ctx.arc(x, gaugeY, gaugeRadius, 0, Math.PI * 2);
+                ctx.fillStyle = '#94a3b8';
+                ctx.fill();
+                ctx.lineWidth = 3;
+                ctx.strokeStyle = '#475569';
+                ctx.stroke();
+
+                // Inner Dial
+                ctx.beginPath();
+                ctx.arc(x, gaugeY, gaugeRadius - 4, 0, Math.PI * 2);
+                ctx.fillStyle = '#ffffff';
+                ctx.fill();
+
+                // Tick Marks (0 to 1000 kPa)
+                ctx.save();
+                ctx.translate(x, gaugeY);
+                for(let i = -135; i <= 135; i += 13.5) { 
+                    ctx.rotate(i * Math.PI / 180);
+                    ctx.beginPath();
+                    ctx.moveTo(0, -gaugeRadius + 4);
+                    
+                    if (i % 27 === 0) {
+                        ctx.lineTo(0, -gaugeRadius + 12); 
+                        ctx.strokeStyle = '#1e293b';
+                        ctx.lineWidth = 2;
+                    } else {
+                        ctx.lineTo(0, -gaugeRadius + 8); 
+                        ctx.strokeStyle = '#94a3b8';
+                        ctx.lineWidth = 1;
+                    }
+                    ctx.stroke();
+                    ctx.rotate(-i * Math.PI / 180);
+                }
+
+                // Needle
+                let pClamped = Math.max(0, Math.min(p_kPa, 1000));
+                let angle = -135 + (pClamped / 1000) * 270;
+                
+                ctx.rotate(angle * Math.PI / 180);
+                ctx.beginPath();
+                ctx.moveTo(-2, 5);
+                ctx.lineTo(2, 5);
+                ctx.lineTo(1, -gaugeRadius + 10);
+                ctx.lineTo(-1, -gaugeRadius + 10);
+                ctx.fillStyle = p_kPa < 0 ? '#b91c1c' : '#dc2626'; 
+                ctx.fill();
+                ctx.rotate(-angle * Math.PI / 180); 
+
+                // Pin
+                ctx.beginPath();
+                ctx.arc(0, 0, 4, 0, Math.PI * 2);
+                ctx.fillStyle = '#1e293b';
+                ctx.fill();
+                ctx.restore(); 
+
+                // Unit
+                ctx.fillStyle = '#64748b';
+                ctx.font = 'bold 9px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('kPa', x, gaugeY + 15);
+            }
+            
+            drawPressureGauge(w * 0.15, cY1, h1, simCurrentP1, 'P₁');
+            drawPressureGauge(w * 0.85, cY2, h2, currentP2, 'P₂');
+
+            // Height Markers
+            function drawHeightMarker(x, pipeCenterY, hVal) {
+                const heightValue = Number(hVal) || 0; 
+                if (Math.abs(pipeCenterY - datumY) < 1) {
+                    ctx.fillStyle = '#8b5cf6';
+                    ctx.fillText(`h = 0.0 m`, x + 40, datumY + 5);
+                    return;
+                }
+                
+                ctx.beginPath();
+                ctx.moveTo(x, pipeCenterY);
+                ctx.lineTo(x, datumY);
+                ctx.strokeStyle = '#8b5cf6';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                ctx.beginPath();
+                ctx.moveTo(x, pipeCenterY);
+                ctx.lineTo(x - 4, pipeCenterY + (pipeCenterY < datumY ? 6 : -6));
+                ctx.lineTo(x + 4, pipeCenterY + (pipeCenterY < datumY ? 6 : -6));
+                ctx.fillStyle = '#8b5cf6';
+                ctx.fill();
+                
+                ctx.beginPath();
+                ctx.moveTo(x, datumY);
+                ctx.lineTo(x - 4, datumY + (pipeCenterY < datumY ? -6 : 6));
+                ctx.lineTo(x + 4, datumY + (pipeCenterY < datumY ? -6 : 6));
+                ctx.fill();
+
+                ctx.fillText(`h = ${heightValue.toFixed(1)} m`, x + 40, (pipeCenterY + datumY) / 2 + 5);
+            }
+            drawHeightMarker(w * 0.25, cY1, currentH1);
+            drawHeightMarker(w * 0.75, cY2, currentH2);
+
+            // Particles
+            ctx.fillStyle = '#2563eb';
+            particles.forEach(p => {
+                let currentH, currentV, currentCY;
+                
+                if (p.x < transitionStartX) {
+                    currentH = h1;
+                    currentV = currentV1;
+                    currentCY = cY1;
+                } else if (p.x > transitionEndX) {
+                    currentH = h2;
+                    currentV = simCurrentV2;
+                    currentCY = cY2;
+                } else {
+                    const t = (p.x - transitionStartX) / (transitionEndX - transitionStartX);
+                    const smoothT = t * t * (3 - 2 * t);
+                    currentH = h1 + (h2 - h1) * smoothT; 
+                    currentV = currentV1 * (h1 / currentH); 
+                    currentCY = cY1 + (cY2 - cY1) * smoothT;
+                }
+
+                p.x += currentV * 0.4; // 0.4 For slower flowing visualization
+                p.y = currentCY + (p.relY * currentH * 0.85);
+
+                if (p.x > w) {
+                    p.x = 0;
+                    p.relY = Math.random() * 2 - 1;
+                }
+
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 1.5, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // Labels in Canvas
+            ctx.fillStyle = '#1e293b'; 
+            ctx.font = 'bold 15px "Sarabun", sans-serif';
+            ctx.textAlign = 'center';
+            
+            let textLeftX = w * 0.15;
+            ctx.fillText(`A₁ = ${currentA1.toFixed(1)} m²`, textLeftX, cY1 - h1 - 15);
+            ctx.fillText(`v₁ = ${currentV1.toFixed(1)} m/s`, textLeftX, cY1 + h1 + 25);
+            
+            let textRightX = w * 0.85;
+            ctx.fillText(`A₂ = ${currentA2.toFixed(1)} m²`, textRightX, cY2 - h2 - 15);
+            ctx.fillText(`v₂ = ${simCurrentV2.toFixed(2)} m/s`, textRightX, cY2 + h2 + 25);
+
+            // Cavitation Warning
+            if (simCurrentP1 < 0) {
+                const boxW = Math.min(w * 0.95, 540);
+                const boxH = 85;
+                const boxX = (w - boxW) / 2;
+                const boxY = 10;
+                
+                ctx.fillStyle = 'rgba(254, 226, 226, 0.95)';
+                ctx.strokeStyle = '#ef4444';
+                ctx.lineWidth = 2;
+                
+                ctx.beginPath();
+                ctx.rect(boxX, boxY, boxW, boxH);
+                ctx.fill();
+                ctx.stroke();
+                
+                ctx.fillStyle = '#b91c1c';
+                ctx.textAlign = 'center';
+                
+                if (currentLang === 'en') {
+                    ctx.font = 'bold 15px "Sarabun", sans-serif';
+                    ctx.fillText("⚠️ Warning: Negative Pressure Calculated (P₁ < 0)!", w / 2, boxY + 25);
+                    ctx.font = '13px "Sarabun", sans-serif';
+                    ctx.fillText("Math: Kinetic/Potential energy is so high it forces Static Pressure to be negative to balance the equation.", w / 2, boxY + 48);
+                    ctx.fillText("Reality: Absolute pressure cannot be negative. The fluid vaporizes into bubbles, causing 'Cavitation'.", w / 2, boxY + 68);
+                } else {
+                    ctx.font = 'bold 16px "Sarabun", sans-serif';
+                    ctx.fillText("⚠️ คำเตือน: ความดันคำนวณได้ค่าติดลบ (P₁ < 0)!", w / 2, boxY + 25);
+                    ctx.font = '14px "Sarabun", sans-serif';
+                    ctx.fillText("คณิตศาสตร์: ความเร็ว/ความสูงดึงพลังงานไปหมด ความดันสถิตจึงต้องติดลบเพื่อรักษาสมดุลสมการแบร์นูลลี", w / 2, boxY + 48);
+                    ctx.fillText("ความจริง: ความดันสัมบูรณ์ติดลบไม่ได้ น้ำจะกลายเป็นไอเรียกว่า 'คาวิเตชัน' (Cavitation) ทำให้ท่อพังได้", w / 2, boxY + 68);
+                }
+            }
+
+            animationFrameId = requestAnimationFrame(drawLoop);
+        }
+
+        // ==========================================
+        // 5. Initializations
+        // ==========================================
+        let isStarted = false;
+        
+        function initApp() {
+            if(isStarted) return;
+            isStarted = true;
+            
+            runAllCalculations();
+
+            const container = document.getElementById('sim-container');
+            try {
+                canvas = document.getElementById('pipeCanvas');
+                ctx = canvas.getContext('2d');
+                
+                if(window.ResizeObserver) {
+                    new ResizeObserver(() => resizeCanvas()).observe(container);
+                } else {
+                    window.addEventListener('resize', resizeCanvas);
+                }
+
+                resizeCanvas();
+                drawLoop();
+            } catch (e) {
+                console.error("Canvas init failed:", e);
+            }
+        }
+
+        window.addEventListener('load', () => {
+            let checkKatex = setInterval(() => {
+                if (window.MathJax && window.MathJax.typesetPromise) {
+                    clearInterval(checkKatex);
+                    initApp();
+                }
+            }, 100);
+
+            setTimeout(() => {
+                clearInterval(checkKatex);
+                if (!isStarted) initApp();
+            }, 5000);
+        });
+
+    </script>
+</body>
+</html>
